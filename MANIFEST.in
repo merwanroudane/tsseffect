@@ -1,0 +1,17 @@
+include LICENSE
+include README.md
+include pyproject.toml
+
+# Ship the tests so a sdist can be checked after install.  setuptools picks up
+# test_*.py on its own but not conftest.py, which holds every fixture.
+recursive-include tests *.py
+
+# The R reference script and its Python comparison, so the validation claims in
+# the README can be reproduced from the sdist alone.
+recursive-include validate *.py
+recursive-include validate *.R
+
+include examples/*.py
+
+# Rendered figures belong in the repository, not in every download.
+prune examples/figures
