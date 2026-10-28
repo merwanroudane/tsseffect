@@ -300,6 +300,10 @@ footer .right{ margin-left:auto; }
 @media (max-width:420px){
   .topbar nav{ gap:8px; }
   .topbar .ext{ padding:3px 8px; font-size:12px; }
+  /* Inline maths is atomic -- it cannot wrap mid-formula -- so a long one like
+     \beta^{ADL}_1 = \theta_x + \beta_1 - \beta_0 can push the page sideways in
+     a narrow panel. Shrinking it slightly is enough to keep it in. */
+  .katex{ font-size:.94em; }
 }
 
 @media print{
