@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tseffects — dynamic effects from single-equation time series models</title>
+<meta name="description" content="Impulse and step responses, long-run multipliers, fitted trajectories and conditional effects for ADL and error-correction models in Python, with delta-method standard errors.">
+<meta name="author" content="Dr Merwan Roudane">
+<meta property="og:title" content="tseffects">
+<meta property="og:description" content="Dynamic effects from single-equation time series models, in Python.">
+<meta property="og:image" content="https://merwanroudane.github.io/tsseffect/assets/approval_overview.png">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+
+<div class="topbar" id="topbar">
+  <div class="wrap">
+    <div class="brand">ts<span>effects</span></div>
+    <nav>
+      <a href="#install">Install</a>
+      <a href="#theory">Theory</a>
+      <a href="#api">API</a>
+      <a href="#application">Example</a>
+      <a href="#interpreting">Outputs</a>
+      <a href="#references">References</a>
+      <a class="ext" href="https://github.com/merwanroudane/tsseffect">GitHub</a>
+      <a class="ext" href="https://pypi.org/project/tseffects/">PyPI</a>
+    </nav>
+  </div>
+</div>
+
+<!-- ============================================================== hero -->
+<div class="hero">
+  <div class="wrap">
+    <h1>tseffects</h1>
+    <p class="tag">Dynamic effects from single-equation time series models, with interactions.</p>
+    <p class="tag" style="font-weight:400;font-size:17px;opacity:.93">
+      Impulse and step responses, arbitrary shock histories, long-run multipliers,
+      fitted trajectories and conditional effects — for ADL and error-correction
+      models, with delta-method standard errors throughout.
+    </p>
+
+    <div class="pills">
+      <span class="pill">v0.5.0</span>
+      <span class="pill">GPL ≥ 2</span>
+      <span class="pill">Python ≥ 3.9</span>
+      <span class="pill">193/193 checks vs. R</span>
+    </div>
+
+    <div class="install">
+      <code id="installcmd">pip install tseffects</code>
+      <button onclick="copyInstall(this)">Copy</button>
+    </div>
+
+    <div class="buttons">
+      <a class="btn" href="https://github.com/merwanroudane/tsseffect">GitHub</a>
+      <a class="btn ghost" href="https://pypi.org/project/tseffects/">PyPI</a>
+      <a class="btn ghost" href="https://doi.org/10.1017/psrm.2026.10087">Read the paper</a>
+    </div>
+
+    <p class="cite">
+      Implements the framework of Warner, Vande Kamp and Jordan (2026),
+      <em>Conditional Relationships in Dynamic Models</em>, Political Science Research
+      and Methods. A Python port of the R package<code>tseffects</code>
+      by Soren Jordan, Garrett N. Vande Kamp and Reshi Rajan.
+    </p>
+  </div>
+</div>
+
+<!-- ======================================================= what it does -->
+<section id="what">
+  <div class="wrap">
+    <p class="eyebrow">The problem</p>
+    <h2>Coefficients are not effects</h2>
+    <p class="lede">
+      Here is a real coefficient table — US presidential approval on consumer
+      sentiment, 139 quarters from 1981 to 2015, from the data shipped with this
+      package.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Coefficient</th><th class="num">Estimate</th><th class="num">Std. err.</th><th class="num">t</th><th class="num">P&gt;|t|</th></tr></thead>
+        <tbody>
+          <tr><td><code>l_1_APPROVE</code></td><td class="num">0.8385</td><td class="num">0.044</td><td class="num">19.182</td><td class="num">0.000</td></tr>
+          <tr class="highlight"><td><code>UMCSENT</code></td><td class="num">0.3118</td><td class="num">0.087</td><td class="num">3.595</td><td class="num">0.000</td></tr>
+          <tr class="highlight"><td><code>l_1_UMCSENT</code></td><td class="num">−0.2584</td><td class="num">0.087</td><td class="num">−2.972</td><td class="num">0.004</td></tr>
+          <tr><td><code>DIVIDEDGOV</code></td><td class="num">1.2616</td><td class="num">1.042</td><td class="num">1.211</td><td class="num">0.228</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      The two sentiment coefficients almost cancel: <b>+0.31 and −0.26, a net +0.05</b>.
+      A reader stops here and concludes that consumer sentiment barely moves approval.
+    </p>
+    <p>
+      That reader is wrong by a factor of six. Because approval carries 0.84 of itself
+      forward each quarter, a <em>permanent</em> one-point rise in sentiment raises
+      approval by <b>+0.33 points</b>. And there is a second thing the coefficient table
+      cannot tell you: that effect is significant at the 1 % level for the first year,
+      and by the long run its confidence interval covers zero.
+    </p>
+    <p>
+      You cannot read either fact off the coefficients. You need the response function,
+      and you need its standard errors.
+    </p>
+
+    <figure>
+      <img src="assets/approval_overview.png" alt="Impulse response, step response and predicted approval">
+      <figcaption>
+        The same model, three questions. A one-quarter blip in sentiment dies almost
+        immediately; a permanent rise moves approval by about a third of a point and
+        keeps it there; and the third panel reads that as the level of approval itself.
+      </figcaption>
+    </figure>
+
+    <div class="grid" style="margin-top:28px">
+      <div class="card">
+        <span class="icon">📈</span>
+        <h3>Every response function</h3>
+        <p class="muted">Impulse, step, any integer order <em>h</em>, cumulations, and
+        arbitrary shock histories — one family, one interface.</p>
+      </div>
+      <div class="card teal">
+        <span class="icon">±</span>
+        <h3>Standard errors that follow</h3>
+        <p class="muted">The delta method on the exact algebraic formula, so long-run
+        multipliers and fitted values get real intervals, not approximations.</p>
+      </div>
+      <div class="card amber">
+        <span class="icon">⇄</span>
+        <h3>ADL and GECM alike</h3>
+        <p class="muted">The two parameterizations are translated exactly into one
+        another, so the same question gives the same answer either way.</p>
+      </div>
+      <div class="card rose">
+        <span class="icon">⊞</span>
+        <h3>Conditional effects</h3>
+        <p class="muted">When the model carries <em>x × z</em>, the effect is a surface
+        over period and moderator — drawn as lines or as a heatmap.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================== install -->
+<section id="install">
+  <div class="wrap">
+    <p class="eyebrow teal">Getting started</p>
+    <h2>Installation</h2>
+
+    <div class="codewrap"><button class="copy">Copy</button>
+<pre><code class="language-bash">pip install tseffects</code></pre></div>
+
+    <p>
+      Needs Python 3.9 or newer, and pulls in <code>numpy</code>, <code>scipy</code>,
+      <code>pandas</code>, <code>sympy</code>, <code>statsmodels</code> and
+      <code>matplotlib</code>.
+    </p>
+
+    <div class="note">
+      <p><b>Never used Python?</b> The
+      <a href="https://github.com/merwanroudane/tsseffect#start-from-absolutely-nothing">from-zero
+      guide in the README</a> walks through installing Python, opening a terminal on
+      Windows or macOS, running your first script, and loading your own Excel or CSV
+      file — written for someone who has never typed a command.</p>
+    </div>
+
+    <h3>The 60-second example</h3>
+    <div class="codewrap"><button class="copy">Copy</button>
+<pre><code class="language-python">import statsmodels.formula.api as smf
+from tseffects import load_toy_data, gdrf_adl
+
+data = load_toy_data()
+
+# 1. Estimate the model yourself, however you like. It is just OLS.
+fit = smf.ols("y ~ l_1_y + x + l_1_x", data=data).fit()
+
+# 2. Tell the package which coefficient sits at which lag.
+out = gdrf_adl(
+    fit,
+    x_vrbl={"x": 0, "l_1_x": 1},   # the shock variable and its lags
+    y_vrbl={"l_1_y": 1},           # the lagged dependent variable
+    shock_history="step",          # a permanent one-unit rise in x
+    s_limit=20,                    # report 20 periods
+)
+
+print(out.summary())       # the table
+out.plot()                 # the figure
+out.formulae["s = 2"]      # 'l_1_x*l_1_y + l_1_y**2*x'</code></pre></div>
+
+    <p>
+      That is the whole interface. You estimate the model; you describe its lag
+      structure; the package does the dynamics. There is no required naming
+      convention — whatever your coefficients are called is what you pass.
+    </p>
+  </div>
+</section>
+
+<!-- =========================================================== theory -->
+<section id="theory">
+  <div class="wrap">
+    <p class="eyebrow">The method</p>
+    <h2>Theory</h2>
+
+    <div class="card theory">
+      <h3>The model</h3>
+      <p>An autoregressive distributed lag model, possibly in differences:</p>
+      $$\Delta^{d_y} y_t \;=\; \sum_{i=1}^{p} \alpha_i\, \Delta^{d_y} y_{t-i}
+        \;+\; \sum_{q=0}^{Q} \beta_q\, \Delta^{d_x} x_{t-q} \;+\; \varepsilon_t$$
+
+      <h3>The impulse response</h3>
+      <p>
+        Shock \(x\) by one unit for one period. The response of \(y\) \(s\) periods
+        later satisfies a recursion: the direct effect through \(\beta_s\), plus
+        whatever the autoregression carries forward.
+      </p>
+      $$\xi_s \;=\; \beta_s \;+\; \sum_{i=1}^{\min(s,p)} \alpha_i\, \xi_{s-i},
+        \qquad \xi_0 = \beta_0$$
+
+      <h3>The General Dynamic Response Function</h3>
+      <p>
+        Every other quantity is a weighted sum of those impulse responses. The weights
+        depend on one number, \(m = h - d_x + d_y\), where \(h\) is the order of the
+        shock history:
+      </p>
+      $$\mathrm{GDRF}_{(s,\,h,\,d_y,\,d_x)} \;=\; \sum_{j=0}^{s} w_j\, \xi_{s-j},
+        \qquad
+        w_j \;=\; \bigl(2\cdot 0^{|m|-m}-1\bigr)^{j}
+        \binom{|m|-1+(1+j)\,0^{|m|-m}}{j}$$
+      <p>reading \(0^0 = 1\). The familiar cases fall straight out:</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th class="num">m</th><th>Weights</th><th>What it is</th></tr></thead>
+          <tbody>
+            <tr><td class="num">−2</td><td><code>1, −1, 0, …</code></td><td>First difference of the impulse response</td></tr>
+            <tr class="highlight"><td class="num">−1</td><td><code>1, 0, 0, …</code></td><td><b>Impulse Response Function</b></td></tr>
+            <tr class="highlight"><td class="num">0</td><td><code>1, 1, 1, …</code></td><td><b>Step Response Function</b> — a running sum</td></tr>
+            <tr><td class="num">1</td><td><code>1, 2, 3, …</code></td><td>Cumulated step response</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>The long-run multiplier</h3>
+      <p>
+        A finite, non-zero limit exists only when \(h - d_x + d_y = 0\). When it does:
+      </p>
+      $$\mathrm{LRM} \;=\; \frac{\sum_{q} \beta_q}{1 - \sum_{i} \alpha_i}$$
+      <p>
+        Outside that condition the effects either decay to zero or diverge, and the
+        package says which in a warning rather than printing a number that means
+        nothing. That is the condition under which a “long-run effect” is a well-defined
+        object at all.
+      </p>
+
+      <h3>The GECM is the same model</h3>
+      <p>
+        An error-correction model is a reparameterization, not a different model, so no
+        information is lost in translating between them:
+      </p>
+      $$\Delta y_t = \theta_y\, y_{t-1} + \theta_x\, x_{t-1}
+        + \sum_i \alpha_i \Delta y_{t-i} + \sum_q \beta_q \Delta x_{t-q} + \varepsilon_t$$
+      <p>
+        maps to ADL coefficients \(\beta^{\mathrm{ADL}}_0 = \beta_0\),
+        \(\beta^{\mathrm{ADL}}_1 = \theta_x + \beta_1 - \beta_0\),
+        \(\alpha^{\mathrm{ADL}}_1 = \theta_y + \alpha_1 + 1\), and so on — with the ADL
+        representation one order higher than the GECM. In the GECM the long-run
+        multiplier reads straight off the two levels terms as \(-\theta_x/\theta_y\).
+      </p>
+
+      <h3>Inference</h3>
+      <p>
+        Each quantity is built as an algebraic formula in the coefficient names, then
+        evaluated by the delta method:
+      </p>
+      $$\widehat{g} = g(\hat\beta), \qquad
+        \mathrm{SE}(\widehat{g}) = \sqrt{\nabla g(\hat\beta)'\, V\, \nabla g(\hat\beta)}$$
+      <p>
+        with \(V\) the classical or any heteroskedasticity-consistent covariance matrix,
+        and a normal confidence interval. One machinery therefore covers impulse
+        responses, cumulations, long-run multipliers, fitted values and conditional
+        effects alike.
+      </p>
+    </div>
+
+    <h3>Step → equation map</h3>
+    <p class="muted">What each piece of the code computes, and where it comes from.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Code</th><th>Equation</th><th>What it computes</th></tr></thead>
+        <tbody>
+          <tr><td><code>pulse_calculator</code></td><td>\(\xi_s = \beta_s + \sum_i \alpha_i \xi_{s-i}\)</td><td>Impulse response formulae, period by period</td></tr>
+          <tr><td><code>shock_weights</code></td><td>\(w_j(h,d_x,d_y)\)</td><td>The generalized binomial weights</td></tr>
+          <tr><td><code>general_calculator</code></td><td>\(\sum_j w_j \xi_{s-j}\)</td><td>The GDRF for an integer shock history</td></tr>
+          <tr><td><code>convolution_calculator</code></td><td>\(\sum_k \tilde h_k \xi_{s-k}\)</td><td>An arbitrary shock history, as dated impulses</td></tr>
+          <tr><td><code>gecm_to_adl</code></td><td>\(\beta^{\mathrm{ADL}}_q,\ \alpha^{\mathrm{ADL}}_p\)</td><td>The exact GECM → ADL translation</td></tr>
+          <tr><td><code>yhat_calculator</code></td><td>\(\bar y + \text{shock} \times \mathrm{GDRF}\)</td><td>Fitted values, from a baseline or a steady state</td></tr>
+          <tr><td><code>delta_method</code></td><td>\(\nabla g' V \nabla g\)</td><td>The standard error of any of the above</td></tr>
+          <tr><td><code>vcov_hc</code></td><td>\((X'X)^{-1}X'\Omega X(X'X)^{-1}\)</td><td>const and HC0–HC5 covariance matrices</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== api -->
+<section id="api">
+  <div class="wrap">
+    <p class="eyebrow">Reference</p>
+    <h2>API</h2>
+
+    <div class="card">
+      <h3><code>gdrf_adl(model, x_vrbl, y_vrbl=None, …)</code></h3>
+      <p class="muted">Dynamic effects from an autoregressive distributed lag model.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Argument</th><th>Default</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>model</code></td><td>—</td><td>A fitted statsmodels OLS result, or a <code>(coefficients, vcov)</code> pair</td></tr>
+            <tr><td><code>x_vrbl</code></td><td>—</td><td><code>{coefficient name: lag order}</code> for the shock variable</td></tr>
+            <tr><td><code>y_vrbl</code></td><td><code>None</code></td><td>Same for the lagged dependent variable; <code>None</code> means finite dynamics</td></tr>
+            <tr><td><code>d_x</code>, <code>d_y</code></td><td><code>0</code></td><td>How many times each variable was differenced before estimation</td></tr>
+            <tr><td><code>shock_history</code></td><td><code>"pulse"</code></td><td><code>"pulse"</code>, <code>"step"</code>, an integer <em>h</em>, or a sequence of length <code>s_limit + 1</code></td></tr>
+            <tr><td><code>inferences_x</code></td><td><code>"levels"</code></td><td>Whether the shock is <em>applied</em> in levels or differences</td></tr>
+            <tr><td><code>inferences_y</code></td><td><code>"levels"</code></td><td>Whether the response is <em>read</em> in levels or differences</td></tr>
+            <tr><td><code>effect_type</code></td><td><code>"discrete"</code></td><td>The effect itself, or <code>"fitted"</code> for the trajectory of y</td></tr>
+            <tr><td><code>cumulative</code></td><td><code>False</code></td><td>Accumulate the effects over periods</td></tr>
+            <tr><td><code>prediction_values</code></td><td><code>None</code></td><td>Where to hold the other regressors for a steady-state baseline</td></tr>
+            <tr><td><code>baseline_y</code>, <code>baseline_y_se</code></td><td><code>None</code>, <code>0</code></td><td>An asserted baseline level of y and its standard error</td></tr>
+            <tr><td><code>shock_size</code></td><td><code>1.0</code></td><td>Size of the shock, in the units of x</td></tr>
+            <tr><td><code>level</code></td><td><code>0.95</code></td><td>Confidence level</td></tr>
+            <tr><td><code>s_limit</code></td><td><code>20</code></td><td>Number of periods to report</td></tr>
+            <tr><td><code>se_type</code></td><td><code>"const"</code></td><td><code>"const"</code>, or <code>"HC0"</code>–<code>"HC5"</code></td></tr>
+            <tr><td><code>return_lrm</code></td><td><code>True</code></td><td>Report the long-run multiplier when it exists</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card sky">
+      <h3><code>gdrf_gecm(model, x_vrbl, y_vrbl, x_d_vrbl, y_d_vrbl=None, …)</code></h3>
+      <p class="muted">The same, from a Generalized Error-Correction Model.</p>
+      <p>
+        <code>x_vrbl</code> and <code>y_vrbl</code> are the <b>first lag in levels</b> —
+        the error-correction terms, exactly one of each. <code>x_d_vrbl</code> and
+        <code>y_d_vrbl</code> are the differenced terms and their lags. Everything else
+        is as above, except that <code>prediction_values</code> is unavailable; use
+        <code>baseline_y</code>.
+      </p>
+    </div>
+
+    <div class="card rose">
+      <h3><code>interact_adl(model, x_vrbl, z_vrbl, x_z_vrbl, y_vrbl=None, …)</code></h3>
+      <p class="muted">Conditional effects from a model carrying <em>x × z</em>.</p>
+      <div class="warn">
+        <p>In <code>x_z_vrbl</code> the lag order is the one on the <b>x</b> side of the
+        product. <code>x_l_1_z</code> (contemporaneous x times lagged z) is <code>0</code>;
+        <code>z_l_1_x</code> (lagged x times contemporaneous z) is <code>1</code>.</p>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Extra argument</th><th>Default</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>plot_type</code></td><td><code>"lines"</code></td><td><code>"lines"</code> or <code>"heatmap"</code></td></tr>
+            <tr><td><code>line_options</code></td><td><code>"z.lines"</code></td><td><code>"z.lines"</code>: period on x, one line per z. <code>"s.lines"</code>: z on x, one line per period</td></tr>
+            <tr><td><code>heatmap_options</code></td><td><code>"significant"</code></td><td>Blank the cells whose interval covers zero, or show <code>"all"</code></td></tr>
+            <tr><td><code>z_vals</code></td><td><code>None</code></td><td>Up to five values for lines; exactly two (lower, upper) for a swept range</td></tr>
+            <tr><td><code>s_vals</code></td><td><code>(0, "LRM")</code></td><td>Periods to draw for <code>s.lines</code></td></tr>
+            <tr><td><code>z_label</code></td><td>first z name</td><td>Axis label for the moderator</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card teal">
+      <h3>What comes back</h3>
+      <p class="muted">Every function returns an <code>EffectResult</code>.</p>
+      <div class="tablewrap">
+        <table>
+          <tbody>
+            <tr><td><code>.estimates</code></td><td>A DataFrame: <code>Period</code>, the effect, <code>SE</code>, <code>Lower</code>, <code>Upper</code> (and <code>Z</code> for an interaction)</td></tr>
+            <tr><td><code>.to_frame()</code></td><td>The same, plus z statistics, p-values and significance stars</td></tr>
+            <tr><td><code>.summary()</code></td><td>An aligned table; also <code>.as_latex()</code>, <code>.as_markdown()</code>, <code>.as_html()</code></td></tr>
+            <tr><td><code>.formulae</code></td><td>The algebra behind each row, keyed <code>"s = 0"</code>, <code>"s = 1"</code>, …, <code>"LRM"</code></td></tr>
+            <tr><td><code>.shocks</code></td><td>The weights applied to the impulse responses</td></tr>
+            <tr><td><code>.lrm</code></td><td>The long-run multiplier row, or <code>None</code></td></tr>
+            <tr><td><code>.plot()</code></td><td>The figure; returns the matplotlib axes</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Simpler wrappers <code>adl_effects</code> and <code>gecm_effects</code> cover the
+        common case — everything in levels, discrete effects — with fewer arguments.
+        Colour helpers <code>parula_colors</code>, <code>parula_cmap</code>,
+        <code>matlab_jet_colors</code>, <code>turbo_colors</code>,
+        <code>bluered_colors</code>, <code>sinha_colors</code> and
+        <code>resolve_colorscale</code> match the R packages, so a figure drawn here and
+        one drawn there look identical.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== application -->
+<section id="application">
+  <div class="wrap">
+    <p class="eyebrow teal">Worked example</p>
+    <h2>Consumer sentiment and presidential approval</h2>
+    <p class="lede">
+      Real data, start to finish. The complete script is
+      <a href="https://github.com/merwanroudane/tsseffect/blob/main/examples/approval_empirical.py"><code>examples/approval_empirical.py</code></a>,
+      and it generates every figure on this page.
+    </p>
+
+    <div class="note">
+      <p><b>The data.</b> Presidential approval, consumer sentiment and economic
+      salience, 139 quarters from 1981Q2 to 2015Q4. From Cavari, Amnon (2019),
+      <em>Presidential Studies Quarterly</em> 49(4): 798–826,
+      <a href="https://doi.org/10.1111/psq.12594">doi:10.1111/psq.12594</a>. Shipped with
+      the package as <code>load_approval()</code>.</p>
+    </div>
+
+    <h3>1 · Build the lags</h3>
+    <div class="codewrap"><button class="copy">Copy</button>
+<pre><code class="language-python">import statsmodels.formula.api as smf
+import tseffects as ts
+
+data = ts.load_approval().copy()
+for name in ("APPROVE", "UMCSENT"):
+    data[f"l_1_{name}"] = data[name].shift(1)   # the lag
+    data[f"d_{name}"]   = data[name].diff()     # the first difference
+
+data = data.dropna(subset=["APPROVE", "l_1_APPROVE", "d_APPROVE", "UMCSENT",
+                           "l_1_UMCSENT", "d_UMCSENT", "DIVIDEDGOV"]).reset_index(drop=True)</code></pre></div>
+    <div class="warn">
+      <p>Drop missing values only on the columns your model uses. A bare
+      <code>data.dropna()</code> throws away rows over unrelated columns and silently
+      changes your sample — and the answer with it.</p>
+    </div>
+
+    <h3>2 · Estimate the model</h3>
+    <div class="codewrap"><button class="copy">Copy</button>
+<pre><code class="language-python">fit = smf.ols("APPROVE ~ l_1_APPROVE + UMCSENT + l_1_UMCSENT + DIVIDEDGOV",
+              data=data).fit()</code></pre></div>
+
+    <h3>3 · The step response</h3>
+    <div class="codewrap"><button class="copy">Copy</button>
+<pre><code class="language-python">step = ts.gdrf_adl(fit,
+                   x_vrbl={"UMCSENT": 0, "l_1_UMCSENT": 1},
+                   y_vrbl={"l_1_APPROVE": 1},
+                   shock_history="step", s_limit=20, se_type="HC3")
+print(step.summary())</code></pre></div>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th class="num">Period</th><th class="num">Effect</th><th class="num">Std. err.</th><th class="num">z</th><th class="num">P&gt;|z|</th><th class="num">95 % CI</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="num">0</td><td class="num">0.3118</td><td class="num">0.1079</td><td class="num">2.891</td><td class="num">0.004</td><td class="num">[0.1004, 0.5233]</td><td class="sig">***</td></tr>
+          <tr><td class="num">1</td><td class="num">0.3149</td><td class="num">0.0727</td><td class="num">4.332</td><td class="num">0.000</td><td class="num">[0.1724, 0.4574]</td><td class="sig">***</td></tr>
+          <tr><td class="num">2</td><td class="num">0.3175</td><td class="num">0.0736</td><td class="num">4.312</td><td class="num">0.000</td><td class="num">[0.1732, 0.4617]</td><td class="sig">***</td></tr>
+          <tr><td class="num">3</td><td class="num">0.3196</td><td class="num">0.0969</td><td class="num">3.299</td><td class="num">0.001</td><td class="num">[0.1297, 0.5095]</td><td class="sig">***</td></tr>
+          <tr><td class="num">4</td><td class="num">0.3214</td><td class="num">0.1242</td><td class="num">2.587</td><td class="num">0.010</td><td class="num">[0.0779, 0.5649]</td><td class="sig">***</td></tr>
+          <tr><td class="num">5</td><td class="num">0.3229</td><td class="num">0.1498</td><td class="num">2.156</td><td class="num">0.031</td><td class="num">[0.0294, 0.6165]</td><td class="sig">**</td></tr>
+          <tr><td class="num">6</td><td class="num">0.3242</td><td class="num">0.1722</td><td class="num">1.882</td><td class="num">0.060</td><td class="num">[−0.0134, 0.6617]</td><td class="sig">*</td></tr>
+          <tr><td class="num">8</td><td class="num">0.3261</td><td class="num">0.2079</td><td class="num">1.568</td><td class="num">0.117</td><td class="num">[−0.0815, 0.7337]</td><td></td></tr>
+          <tr><td class="num">12</td><td class="num">0.3285</td><td class="num">0.2519</td><td class="num">1.304</td><td class="num">0.192</td><td class="num">[−0.1653, 0.8222]</td><td></td></tr>
+          <tr><td class="num">20</td><td class="num">0.3302</td><td class="num">0.2851</td><td class="num">1.158</td><td class="num">0.247</td><td class="num">[−0.2286, 0.8889]</td><td></td></tr>
+          <tr class="highlight"><td class="num"><b>LRM</b></td><td class="num">0.3307</td><td class="num">0.2960</td><td class="num">1.117</td><td class="num">0.264</td><td class="num">[−0.2495, 0.9109]</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:14px">
+      *** p&lt;0.01, ** p&lt;0.05, * p&lt;0.10. Heteroskedasticity-consistent standard
+      errors (HC3). Rows 7, 9–11 and 13–19 omitted for space; the full table has every
+      period.
+    </p>
+
+    <figure>
+      <img src="assets/approval_step.png" alt="Step response of approval to consumer sentiment">
+      <figcaption>
+        The point estimate barely moves after the first quarter. What changes is the
+        confidence band: 0.07 wide at <em>s</em> = 1, and 0.29 by <em>s</em> = 20.
+      </figcaption>
+    </figure>
+
+    <h3>4 · The same question through a GECM</h3>
+    <p>
+      The GECM and the ADL are the same model written two ways, so the answer must be
+      identical — and it is, to 2.3 × 10⁻¹⁴:
+    </p>
+    <div class="codewrap"><button class="copy">Copy</button>
+<pre><code class="language-python">gecm_fit = smf.ols("d_APPROVE ~ l_1_APPROVE + l_1_UMCSENT + d_UMCSENT + DIVIDEDGOV",
+                   data=data).fit()
+
+gecm = ts.gdrf_gecm(gecm_fit,
+                    x_vrbl={"l_1_UMCSENT": 1}, y_vrbl={"l_1_APPROVE": 1},
+                    x_d_vrbl={"d_UMCSENT": 0}, y_d_vrbl=None,
+                    shock_history="step", s_limit=20, se_type="HC3")
+
+# LRM 0.3307, SE 0.2960 — the same numbers, from the other parameterization</code></pre></div>
+
+    <figure>
+      <img src="assets/approval_gecm.png" alt="GECM step response">
+      <figcaption>The same curve, recovered from the error-correction form.</figcaption>
+    </figure>
+
+    <h3>5 · Fitted values</h3>
+    <p>
+      Add the effect to the model-implied steady state and read the trajectory of
+      approval itself rather than the change. The baseline is 53.6 %, and the delta
+      method carries the uncertainty in that steady state through to every period.
+    </p>
+    <div class="codewrap"><button class="copy">Copy</button>
+<pre><code class="language-python">fitted = ts.gdrf_adl(fit,
+                     x_vrbl={"UMCSENT": 0, "l_1_UMCSENT": 1},
+                     y_vrbl={"l_1_APPROVE": 1},
+                     shock_history="step", effect_type="fitted",
+                     prediction_values={"UMCSENT":     data["UMCSENT"].mean(),
+                                        "l_1_UMCSENT": data["UMCSENT"].mean(),
+                                        "DIVIDEDGOV":  data["DIVIDEDGOV"].mean()},
+                     s_limit=20, se_type="HC3")</code></pre></div>
+
+    <figure>
+      <img src="assets/approval_fitted.png" alt="Predicted approval after a permanent sentiment shock">
+      <figcaption>Predicted approval, from its steady state of 53.6 %.</figcaption>
+    </figure>
+
+    <h3>6 · Does it depend on how salient the economy is?</h3>
+    <p>
+      This is Cavari’s own thesis, and it is an interaction. Both interaction terms are
+      significant — <b>+0.0143 (p = 0.014)</b> and <b>−0.0141 (p = 0.016)</b> — and what
+      they govern turns out to be the <b>speed</b> of the response rather than where it
+      ends up.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Economic salience</th><th class="num">s = 0</th><th class="num">s = 4</th><th class="num">s = 20</th><th class="num">Long run</th></tr></thead>
+        <tbody>
+          <tr><td>21 % (10th pct)</td><td class="num">0.005 <span class="muted">(p = 0.97)</span></td><td class="num">0.246</td><td class="num">0.478</td><td class="num">0.494</td></tr>
+          <tr><td>35 % (median)</td><td class="num">0.205 <span class="muted">(p = 0.028)</span></td><td class="num">0.357</td><td class="num">0.502</td><td class="num">0.513</td></tr>
+          <tr><td>59 % (90th pct)</td><td class="num">0.549 <span class="muted">(p = 0.010)</span></td><td class="num">0.547</td><td class="num">0.544</td><td class="num">0.544</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      When the economy is on the public’s mind, approval makes its whole move in the
+      quarter the shock lands. When it is not, the immediate effect is indistinguishable
+      from zero and it takes about five years to arrive at essentially the same place.
+      The three long-run multipliers are nearly identical: the destination does not
+      depend on salience, only the journey. No coefficient table can show you that.
+    </p>
+    <div class="codewrap"><button class="copy">Copy</button>
+<pre><code class="language-python">data["UMC_MIP"]   = data["UMCSENT"]     * data["MIP_MACROECONOMICS"]
+data["l1UMC_MIP"] = data["l_1_UMCSENT"] * data["MIP_MACROECONOMICS"]
+
+inter_fit = smf.ols(
+    "APPROVE ~ l_1_APPROVE + UMCSENT + l_1_UMCSENT + MIP_MACROECONOMICS"
+    " + UMC_MIP + l1UMC_MIP + DIVIDEDGOV", data=data).fit()
+
+inter = ts.interact_adl(inter_fit,
+                        x_vrbl={"UMCSENT": 0, "l_1_UMCSENT": 1},
+                        z_vrbl={"MIP_MACROECONOMICS": 0},
+                        x_z_vrbl={"UMC_MIP": 0, "l1UMC_MIP": 1},
+                        y_vrbl={"l_1_APPROVE": 1},
+                        shock_history="step", z_vals=[21, 35, 59],
+                        s_limit=20, se_type="HC3",
+                        z_label="economic salience (% naming the economy)")
+inter.plot()</code></pre></div>
+
+    <figure>
+      <img src="assets/approval_interact_lines.png" alt="Conditional step response by economic salience">
+      <figcaption>
+        The three lines are the 10th, 50th and 90th percentiles of economic salience.
+        They converge: the long-run effect is about half a point whatever the salience.
+        What differs is how quickly approval gets there — immediately when the economy
+        is salient, over roughly five years when it is not.
+      </figcaption>
+    </figure>
+
+    <figure>
+      <img src="assets/approval_interact_heatmap.png" alt="Significant conditional effects surface">
+      <figcaption>
+        The same surface with <code>heatmap_options="significant"</code>: the white
+        region is where the confidence interval covers zero, so the coloured region is
+        exactly where the effect can be told apart from nothing.
+      </figcaption>
+    </figure>
+
+    <h3>7 · Export for the manuscript</h3>
+    <div class="codewrap"><button class="copy">Copy</button>
+<pre><code class="language-python">print(step.summary().as_latex())            # booktabs, stars, a notes block
+step.to_frame().to_csv("effects.csv", index=False)
+step.plot().figure.savefig("figure1.pdf", bbox_inches="tight")</code></pre></div>
+  </div>
+</section>
+
+<!-- =================================================== interpreting -->
+<section id="interpreting">
+  <div class="wrap">
+    <p class="eyebrow amber">How to read it</p>
+    <h2>Interpreting the output</h2>
+
+    <div class="grid">
+      <div class="card">
+        <h3>The table</h3>
+        <p class="muted">
+          One row per period <em>s</em>. <b>Effect</b> is the response of y, in the units
+          of y, to the shock you specified in x. <b>SE</b> is its delta-method standard
+          error. Stars are <code>***</code> at 1 %, <code>**</code> at 5 %,
+          <code>*</code> at 10 %, from a two-sided normal test. The <b>LRM</b> row is the
+          limit as <em>s</em> → ∞; a <b>baseline</b> row, on fitted values, is the
+          pre-shock level of y.
+        </p>
+      </div>
+      <div class="card teal">
+        <h3>The figure</h3>
+        <p class="muted">
+          The solid line is the point estimate and the band is the confidence interval.
+          The horizontal line at zero appears for discrete effects and not for fitted
+          values, where zero means nothing. A long-run multiplier is drawn as a separate
+          point past the end of the path, because it is a limit rather than a period.
+        </p>
+      </div>
+      <div class="card amber">
+        <h3>Why the band widens</h3>
+        <p class="muted">
+          Each period adds another estimated coefficient to the sum, so the variance
+          accumulates. In the approval example the point estimate is flat at 0.33 while
+          the standard error goes from 0.07 to 0.29 — the effect is firmly established
+          in the short run and not distinguishable from zero in the long run.
+        </p>
+      </div>
+      <div class="card rose">
+        <h3>When no LRM appears</h3>
+        <p class="muted">
+          A warning has told you why: a long-run multiplier exists only when
+          <em>h</em> − <em>d<sub>x</sub></em> + <em>d<sub>y</sub></em> = 0. Outside that
+          the effects decay to zero or diverge, and there is no finite limit to report.
+        </p>
+      </div>
+    </div>
+
+    <h3>Practical guidance</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td>Which shock history?</td><td><code>"step"</code> for “what if x moves permanently” (a policy, a regime, a trend). <code>"pulse"</code> for “what if x blips once”. <code>cumulative=True</code> on a pulse accumulates that blip.</td></tr>
+          <tr><td>Which <code>se_type</code>?</td><td><code>"HC3"</code> is the safe small-sample default; <code>"HC1"</code> matches Stata’s <code>robust</code>; <code>"const"</code> if you have tested and accepted homoskedasticity.</td></tr>
+          <tr><td>How many periods?</td><td>Enough that the response flattens — twenty for an AR coefficient near 0.85, sixty near 0.97. The LRM is exact regardless of <code>s_limit</code>.</td></tr>
+          <tr><td>Levels or differences?</td><td>If you estimated in differences because the series are I(1) but the question is about levels, set <code>d_x</code>/<code>d_y</code> and leave the <code>inferences_</code> arguments at <code>"levels"</code>. The package unwinds it.</td></tr>
+          <tr><td>Lag orders?</td><td>The number in <code>x_vrbl</code> is the lag of that coefficient, not its position in the formula. <code>{"x": 0, "l_2_x": 2}</code> is correct for a model that skips lag 1.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================= validation -->
+<section id="validation">
+  <div class="wrap">
+    <p class="eyebrow">Evidence</p>
+    <h2>Validation</h2>
+    <div class="grid">
+      <div class="card teal">
+        <h3>193 / 193 against R</h3>
+        <p class="muted">
+          Twenty-nine specifications run through the R package and compared value by
+          value at a relative tolerance of 1e-9: all eight covariance types on seven
+          models, every shock history, levels and differences inference both ways,
+          fitted values from a steady state and from an asserted baseline, GECM at one
+          and two lags, finite distributed lags, interactions, non-default confidence
+          levels, the binomial weights, and the GECM-to-ADL translation string for
+          string.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Independent of R</h3>
+        <p class="muted">
+          The GECM path reproduces the isomorphic ADL fit to 1.3 × 10⁻¹⁵ on simulated
+          data and 2.3 × 10⁻¹⁴ on the approval data — the sharpest available check on
+          the translation, and it needs no reference implementation at all.
+        </p>
+      </div>
+      <div class="card amber">
+        <h3>176 tests</h3>
+        <p class="muted">
+          Invariants and identities that must hold whatever the data: the step response
+          is the running sum of the impulse response, a cumulated pulse equals the step,
+          shock size scales linearly, a custom unit impulse reproduces the pulse, and
+          the long run is the limit of the path.
+        </p>
+      </div>
+    </div>
+    <div class="codewrap"><button class="copy">Copy</button>
+<pre><code class="language-bash">Rscript validate/r_reference.R    # 29 specifications through the R package
+python validate/compare.py        # the same 29 in Python, compared value by value</code></pre></div>
+  </div>
+</section>
+
+<!-- ======================================================= references -->
+<section id="references">
+  <div class="wrap">
+    <p class="eyebrow">Sources</p>
+    <h2>References</h2>
+    <div class="card">
+      <ol style="line-height:1.85">
+        <li>Warner, Zach, Garrett N. Vande Kamp and Soren Jordan. 2026. “Conditional
+          Relationships in Dynamic Models.” <em>Political Science Research and
+          Methods</em>. <a href="https://doi.org/10.1017/psrm.2026.10087">doi:10.1017/psrm.2026.10087</a></li>
+        <li>Vande Kamp, Garrett N. and Soren Jordan. 2025. “The Necessity of Moving
+          Averages in Dynamic Linear Regression Models.” <em>American Journal of
+          Political Science</em> 69(1): 176–193.</li>
+        <li>De Boef, Suzanna and Luke Keele. 2008. “Taking Time Seriously.”
+          <em>American Journal of Political Science</em> 52(1): 184–200.
+          <a href="https://doi.org/10.1111/j.1540-5907.2007.00307.x">doi:10.1111/j.1540-5907.2007.00307.x</a></li>
+        <li>Philips, Andrew Q. 2018. “Have Your Cake and Eat It Too? Cointegration and
+          Dynamic Inference from Autoregressive Distributed Lag Models.” <em>American
+          Journal of Political Science</em> 62(1): 230–244.
+          <a href="https://doi.org/10.1111/ajps.12318">doi:10.1111/ajps.12318</a></li>
+        <li>Pesaran, M. Hashem, Yongcheol Shin and Richard J. Smith. 2001. “Bounds
+          Testing Approaches to the Analysis of Level Relationships.” <em>Journal of
+          Applied Econometrics</em> 16(3): 289–326.
+          <a href="https://doi.org/10.1002/jae.616">doi:10.1002/jae.616</a></li>
+        <li>Grant, Taylor and Matthew J. Lebo. 2016. “Error Correction Methods with
+          Political Time Series.” <em>Political Analysis</em> 24(1): 3–30.
+          <a href="https://doi.org/10.1093/pan/mpv027">doi:10.1093/pan/mpv027</a></li>
+        <li>Cavari, Amnon. 2019. “Evaluating the President on Your Priorities: Issue
+          Priorities, Policy Performance, and Presidential Approval, 1981–2016.”
+          <em>Presidential Studies Quarterly</em> 49(4): 798–826.
+          <a href="https://doi.org/10.1111/psq.12594">doi:10.1111/psq.12594</a>
+          — the dataset shipped with the package.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== author -->
+<section id="author">
+  <div class="wrap">
+    <p class="eyebrow">Author</p>
+    <h2>Dr Merwan Roudane</h2>
+
+    <div class="author">
+      <div class="card">
+        <h3>Contact and links</h3>
+        <ul class="linklist">
+          <li><span class="k">Email</span><a href="mailto:merwanroudane920@gmail.com">merwanroudane920@gmail.com</a></li>
+          <li><span class="k">GitHub</span><a href="https://github.com/merwanroudane">github.com/merwanroudane</a></li>
+          <li><span class="k">Repository</span><a href="https://github.com/merwanroudane/tsseffect">merwanroudane/tsseffect</a></li>
+          <li><span class="k">PyPI</span><a href="https://pypi.org/project/tseffects/">pypi.org/project/tseffects</a></li>
+          <li><span class="k">Documentation</span><a href="https://merwanroudane.github.io/tsseffect/">merwanroudane.github.io/tsseffect</a></li>
+          <li><span class="k">Method paper</span><a href="https://doi.org/10.1017/psrm.2026.10087">doi:10.1017/psrm.2026.10087</a></li>
+          <li><span class="k">Original R package</span><a href="https://cran.r-project.org/package=tseffects">CRAN: tseffects</a></li>
+        </ul>
+
+        <h3>Other packages</h3>
+        <ul class="linklist">
+          <li><a href="https://cran.r-project.org/package=QuantileOnQuantile">QuantileOnQuantile</a> <span class="muted">· CRAN</span></li>
+          <li><a href="https://cran.r-project.org/package=mqqr">mqqr</a> <span class="muted">· CRAN</span></li>
+          <li><a href="https://cran.r-project.org/package=qqkrls">qqkrls</a> <span class="muted">· CRAN</span></li>
+          <li><a href="https://cran.r-project.org/package=mqqcause">mqqcause</a> <span class="muted">· CRAN</span></li>
+        </ul>
+      </div>
+
+      <div class="card amber">
+        <h3>Cite this package</h3>
+        <div class="codewrap"><button class="copy">Copy</button>
+<pre><code>@software{roudane2026tseffects,
+  author  = {Roudane, Merwan},
+  title   = {tseffects: Dynamic Effects from Single-Equation
+             Time Series Models in Python},
+  year    = {2026},
+  version = {0.5.0},
+  url     = {https://github.com/merwanroudane/tsseffect}
+}</code></pre></div>
+        <p class="muted" style="font-size:14.5px">
+          Please cite the method paper and the original R package alongside this one.
+        </p>
+
+        <h3>Credit</h3>
+        <p class="muted" style="font-size:14.5px">
+          The method and the original implementation are the work of <b>Soren Jordan,
+          Garrett N. Vande Kamp and Reshi Rajan</b>. This is a port of their R package
+          to Python, released under the same GPL (≥ 2) — a GPL work keeps its licence
+          when it is ported.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Dr Merwan Roudane · GPL (≥ 2)</span>
+    <span class="right">tseffects v0.5.0 · updated 28 October 2026</span>
+  </div>
+</footer>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<script>
+function copyInstall(btn){
+  navigator.clipboard.writeText(document.getElementById("installcmd").textContent);
+  btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy", 1400);
+}
+window.addEventListener("DOMContentLoaded", () => {
+  // Copy buttons on every code block.
+  document.querySelectorAll(".codewrap .copy").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const code = btn.parentElement.querySelector("code");
+      navigator.clipboard.writeText(code.textContent);
+      btn.textContent = "Copied";
+      setTimeout(() => btn.textContent = "Copy", 1400);
+    });
+  });
+  // A border on the top bar once the page has scrolled.
+  const bar = document.getElementById("topbar");
+  const onScroll = () => bar.classList.toggle("scrolled", window.scrollY > 8);
+  window.addEventListener("scroll", onScroll, {passive:true});
+  onScroll();
+});
+window.addEventListener("load", () => {
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left:"$$", right:"$$", display:true},
+        {left:"\\(", right:"\\)", display:false}
+      ],
+      throwOnError:false
+    });
+  }
+  if (window.hljs) hljs.highlightAll();
+});
+</script>
+</body>
+</html>

@@ -21,3 +21,10 @@ validate/r_out/
 
 # The upstream R source tarball
 *.tar.gz
+
+# Gallery output: regenerate with examples/gallery.py.  The figures the README
+# and the docs site use are the real-data ones in docs/assets, which ARE tracked.
+examples/figures/
+
+# Local test report
+pytest_report.txt

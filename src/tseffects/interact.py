@@ -25,6 +25,7 @@ from ._delta import BatchDelta, z_quantile
 from ._util import as_model, check_vrbl, model_column, sanitize_vrbl
 from .baselines import yhat_calculator
 from .calculators import convolution_calculator, general_calculator, pulse_calculator
+from .gdrf import _table_meta
 from .results import EffectResult
 
 __all__ = ["interact_adl", "combine_interaction_terms"]
@@ -387,6 +388,20 @@ def interact_adl(
         "custom_history": shock["custom"],
         "h_order": shock["h_order_plot"],
         "model": "interact",
+        "table": _table_meta(
+            model_info,
+            x_vrbl=x_vrbl,
+            y_vrbl=y_vrbl,
+            shock_history=shock_history,
+            cumulative=cumulative,
+            custom=shock["custom"],
+            s_limit=s_limit,
+            shock_size=shock_size,
+            se_type=se_type,
+            effect_type=effect_type,
+            model_label="interactive ADL",
+            has_lrm=has_lrm,
+        ),
         "plot_type": plot_type,
         "line_options": line_options,
         "heatmap_options": heatmap_options,

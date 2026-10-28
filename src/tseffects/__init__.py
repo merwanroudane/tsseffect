@@ -56,7 +56,21 @@ Regression Models", *American Journal of Political Science* 69(1): 176-193
 (2025).
 """
 
+from ._colors import (
+    COLORSCALES,
+    PARULA_STOPS,
+    bluered_colors,
+    diverging_cmap,
+    matlab_jet_colors,
+    parula_cmap,
+    parula_colors,
+    resolve_colorscale,
+    sequential_cmap,
+    sinha_colors,
+    turbo_colors,
+)
 from ._delta import BatchDelta, DeltaFn, DeltaResult, delta_method
+from ._tables import Summary
 from ._vcov import VCOV_TYPES, vcov_hc
 from .baselines import yhat_calculator
 from .calculators import (
@@ -80,7 +94,9 @@ from .plots import (
 )
 from .results import EffectResult
 
-__version__ = "0.4.1"
+__version__ = "0.5.0"
+__author__ = "Dr Merwan Roudane"
+__email__ = "merwanroudane920@gmail.com"
 
 __all__ = [
     # Main entry points
@@ -105,8 +121,21 @@ __all__ = [
     "DeltaResult",
     "vcov_hc",
     "VCOV_TYPES",
-    # Results and plots
+    # Results, tables and plots
     "EffectResult",
+    "Summary",
+    # Colour scales
+    "parula_colors",
+    "parula_cmap",
+    "matlab_jet_colors",
+    "turbo_colors",
+    "bluered_colors",
+    "sinha_colors",
+    "resolve_colorscale",
+    "sequential_cmap",
+    "diverging_cmap",
+    "PARULA_STOPS",
+    "COLORSCALES",
     "plot_effects",
     "plot_gdrf",
     "plot_interact_lines",
@@ -117,4 +146,6 @@ __all__ = [
     "load_toy_data",
     "load_approval",
     "__version__",
+    "__author__",
+    "__email__",
 ]

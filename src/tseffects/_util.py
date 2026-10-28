@@ -130,6 +130,8 @@ class ModelInfo:
     vcov: np.ndarray
     names: list[str] = field(default_factory=list)
     frame: pd.DataFrame | None = None
+    nobs: int | None = None
+    y_name: str | None = None
 
     def __post_init__(self):
         if not self.names:
@@ -216,6 +218,7 @@ def as_model(model, se_type: str = "const", warn_names: bool = True) -> ModelInf
         df_resid = float(getattr(model, "df_resid", len(resid) - np.shape(exog)[1]))
         vcov = vcov_hc(exog, resid, df_resid, se_type)
         frame = pd.DataFrame(np.asarray(exog, dtype=float), columns=clean)
+        nobs = int(np.shape(exog)[0])
     else:  # pragma: no cover - models without a design matrix
         if se_type != "const":
             raise ValueError(
@@ -225,8 +228,16 @@ def as_model(model, se_type: str = "const", warn_names: bool = True) -> ModelInf
             )
         vcov = np.asarray(model.cov_params(), dtype=float)
         frame = None
+        nobs = getattr(model, "nobs", None)
 
-    return ModelInfo(coef=dict(zip(clean, values)), vcov=vcov, names=clean, frame=frame)
+    return ModelInfo(
+        coef=dict(zip(clean, values)),
+        vcov=vcov,
+        names=clean,
+        frame=frame,
+        nobs=int(nobs) if nobs else None,
+        y_name=getattr(inner, "endog_names", None) if inner is not None else None,
+    )
 
 
 def model_column(model_info: ModelInfo, name: str) -> np.ndarray:

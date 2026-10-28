@@ -59,6 +59,70 @@ def _add_baseline_se(frame: pd.DataFrame, value_col: str, baseline_y_se: float, 
     return frame
 
 
+#: How each ``se_type`` is described in a table footer.
+SE_LABELS = {
+    "const": "Classical (homoskedastic) OLS standard errors.",
+    "HC": "Heteroskedasticity-consistent standard errors (HC0).",
+    "HC0": "Heteroskedasticity-consistent standard errors (White, HC0).",
+    "HC1": "Heteroskedasticity-consistent standard errors (HC1, df-corrected).",
+    "HC2": "Heteroskedasticity-consistent standard errors (HC2, leverage-adjusted).",
+    "HC3": "Heteroskedasticity-consistent standard errors (HC3, jackknife-like).",
+    "HC4": "Heteroskedasticity-consistent standard errors (HC4).",
+    "HC4m": "Heteroskedasticity-consistent standard errors (HC4m).",
+    "HC5": "Heteroskedasticity-consistent standard errors (HC5).",
+}
+
+
+def _shock_label(shock_history, cumulative: bool, custom) -> str:
+    """How the shock history reads in a table header."""
+    if custom is not None:
+        base = f"Custom ({len(custom)} periods)"
+    elif isinstance(shock_history, str):
+        base = {"pulse": "Impulse (h = -1)", "impulse": "Impulse (h = -1)",
+                "step": "Step (h = 0)"}.get(shock_history, str(shock_history))
+    else:
+        base = f"Order h = {shock_history}"
+    return ("Cumulative " + base[0].lower() + base[1:]) if cumulative else base
+
+
+def _table_meta(
+    model_info,
+    *,
+    x_vrbl,
+    y_vrbl,
+    shock_history,
+    cumulative,
+    custom,
+    s_limit,
+    shock_size,
+    se_type,
+    effect_type,
+    model_label,
+    has_lrm,
+    y_name=None,
+) -> dict:
+    """The header and footer content for :meth:`EffectResult.summary`."""
+    kind = "Fitted values" if effect_type == "fitted" else "Dynamic effects"
+    article = "an" if model_label[0].upper() in "AEIOU" else "a"
+    return {
+        "title": f"{kind} from {article} {model_label}",
+        "y_name": y_name or model_info.y_name or "(dependent variable)",
+        "x_name": ", ".join(list(x_vrbl)[:2]) + ("..." if len(x_vrbl) > 2 else ""),
+        "nobs": model_info.nobs if model_info.nobs else "--",
+        "s_limit": s_limit,
+        "shock_label": _shock_label(shock_history, cumulative, custom),
+        "shock_size": shock_size,
+        "model_label": model_label,
+        "se_label": se_type,
+        "se_note": SE_LABELS.get(se_type, ""),
+        "lrm_note": (
+            "LRM is the Long-Run Multiplier: the limit of the response as s -> infinity."
+            if has_lrm
+            else ""
+        ),
+    }
+
+
 def _placeholder_coefficients(translated) -> tuple[dict, dict]:
     """Stand a bare symbol in for each translated ADL coefficient.
 
@@ -386,6 +450,20 @@ def gdrf_adl(
             adjusted["plot_d_x"],
         ),
         "model": "adl",
+        "table": _table_meta(
+            model_info,
+            x_vrbl=x_vrbl,
+            y_vrbl=y_vrbl,
+            shock_history=shock_history,
+            cumulative=cumulative,
+            custom=shock["custom"],
+            s_limit=s_limit,
+            shock_size=shock_size,
+            se_type=se_type,
+            effect_type=effect_type,
+            model_label=f"ADL({len(y_vrbl or {})}, {max(x_vrbl.values())})",
+            has_lrm=has_lrm,
+        ),
     }
     return EffectResult(frame, formulae, formulae_expr, shocks, meta)
 
@@ -617,6 +695,20 @@ def gdrf_gecm(
         ),
         "model": "gecm",
         "adl_coefficients": translated,
+        "table": _table_meta(
+            model_info,
+            x_vrbl=x_d_vrbl,
+            y_vrbl=y_d_vrbl,
+            shock_history=shock_history,
+            cumulative=cumulative,
+            custom=shock["custom"],
+            s_limit=s_limit,
+            shock_size=shock_size,
+            se_type=se_type,
+            effect_type=effect_type,
+            model_label="GECM",
+            has_lrm=has_lrm,
+        ),
     }
     return EffectResult(frame, formulae, formulae_expr, shocks, meta)
 

@@ -1,0 +1,71 @@
+cff-version: 1.2.0
+title: "tseffects: Dynamic Effects from Single-Equation Time Series Models in Python"
+message: "If you use this software, please cite it together with the method paper and the original R package."
+type: software
+authors:
+  - family-names: Roudane
+    given-names: Merwan
+    email: merwanroudane920@gmail.com
+    affiliation: "Independent researcher"
+repository-code: "https://github.com/merwanroudane/tsseffect"
+url: "https://merwanroudane.github.io/tsseffect/"
+license: GPL-2.0-or-later
+version: 0.5.0
+date-released: "2026-10-28"
+keywords:
+  - time series
+  - econometrics
+  - autoregressive distributed lag
+  - error correction model
+  - impulse response function
+  - long-run multiplier
+  - interaction effects
+  - delta method
+abstract: >-
+  Recovers dynamic inferences from autoregressive distributed lag (ADL) models
+  and Generalized Error-Correction Models (GECM): impulse and step response
+  functions, arbitrary shock histories, long-run multipliers, fitted
+  trajectories, and the conditional effects implied by a multiplicative
+  interaction. Every quantity is built as an algebraic formula in the model's
+  coefficient names and then evaluated by the delta method, so one
+  standard-error machinery covers them all. A Python port of the R package
+  tseffects by Soren Jordan, Garrett N. Vande Kamp and Reshi Rajan.
+references:
+  - type: article
+    title: "Conditional Relationships in Dynamic Models"
+    authors:
+      - family-names: Warner
+        given-names: Zach
+      - family-names: "Vande Kamp"
+        given-names: "Garrett N."
+      - family-names: Jordan
+        given-names: Soren
+    journal: "Political Science Research and Methods"
+    year: 2026
+    doi: 10.1017/psrm.2026.10087
+  - type: article
+    title: "The Necessity of Moving Averages in Dynamic Linear Regression Models"
+    authors:
+      - family-names: "Vande Kamp"
+        given-names: "Garrett N."
+      - family-names: Jordan
+        given-names: Soren
+    journal: "American Journal of Political Science"
+    volume: 69
+    issue: 1
+    start: 176
+    end: 193
+    year: 2025
+  - type: software
+    title: "tseffects: Dynamic Effects from Single-Equation Time Series Models (with Interactions)"
+    authors:
+      - family-names: Jordan
+        given-names: Soren
+      - family-names: "Vande Kamp"
+        given-names: "Garrett N."
+      - family-names: Rajan
+        given-names: Reshi
+    url: "https://cran.r-project.org/package=tseffects"
+    version: 0.4.1
+    year: 2026
+    notes: "The original R implementation, which this package ports."

@@ -88,13 +88,32 @@ def _fmt(value) -> str:
     return f"{value:g}"
 
 
+def _baseline_at(s_limit: int) -> float:
+    """Where the pre-shock baseline sits on the x axis.
+
+    One period before the shock is what the quantity means, but on a long
+    horizon a tick at -1 collides with the tick at 0.  Scaling the gap with the
+    horizon keeps the two labels apart, and mirrors how the long run is pushed
+    out past the end of the path.
+    """
+    return -float(max(1, round(s_limit * 0.08)))
+
+
+def _lrm_at(s_limit: int) -> float:
+    return float(s_limit + round(s_limit * 0.2))
+
+
 def _period_ticks(s_limit: int, include_baseline: bool, lrm_at=None):
     """Five evenly spaced period ticks, plus the baseline and LRM markers."""
     base = list(np.linspace(0, s_limit, 5))
     ticks = [_fmt(v) for v in base]
     positions = list(base)
     if include_baseline:
-        positions.insert(0, -1.0)
+        # "Baseline" is a wide label sitting just left of the tick at 0, and on
+        # a narrow panel the two overlap.  Drop the 0 tick: the shock is still
+        # visibly where the line starts, so the label earns nothing.
+        positions, ticks = positions[1:], ticks[1:]
+        positions.insert(0, _baseline_at(s_limit))
         ticks.insert(0, "Baseline")
     if lrm_at is not None:
         positions.append(float(lrm_at))
@@ -105,16 +124,17 @@ def _period_ticks(s_limit: int, include_baseline: bool, lrm_at=None):
 def _numeric_periods(frame, s_limit: int):
     """Map the ``Period`` column onto x-axis positions.
 
-    ``"baseline"`` sits one period before the shock and ``"LRM"`` is pushed out
-    past the last period, so the long run reads as separate from the path.
+    ``"baseline"`` sits before the shock and ``"LRM"`` is pushed out past the
+    last period, so each reads as separate from the path.
     """
-    lrm_at = s_limit + round(s_limit * 0.2)
+    lrm_at = _lrm_at(s_limit)
+    baseline_at = _baseline_at(s_limit)
     out = []
     for value in frame["Period"]:
         if value == "baseline":
-            out.append(-1.0)
+            out.append(baseline_at)
         elif value == "LRM":
-            out.append(float(lrm_at))
+            out.append(lrm_at)
         else:
             out.append(float(value))
     return np.asarray(out, dtype=float), lrm_at
@@ -140,11 +160,21 @@ def _line_colors(line_colors, n: int):
 
 
 def _diverging_cmap(name):
-    """A white-centred diverging colormap from a palette name or colormap."""
+    """A white-centred diverging colormap from a palette name or colormap.
+
+    The house families come first -- Parula, Blue-Red and the rest -- then this
+    module's own named pairs, then any matplotlib colormap.
+    """
     from matplotlib.colors import LinearSegmentedColormap
 
     if not isinstance(name, str):
         return name
+
+    from ._colors import COLORSCALES, diverging_cmap as house_diverging
+
+    if name.strip() in COLORSCALES or name.strip().title() in COLORSCALES:
+        return house_diverging(name)
+
     if name not in HEATMAP_PALETTES:
         import matplotlib
 
@@ -153,7 +183,7 @@ def _diverging_cmap(name):
         except KeyError:
             raise ValueError(
                 f"Unknown heatmap palette {name!r}. Use one of: "
-                + ", ".join(sorted(HEATMAP_PALETTES))
+                + ", ".join(sorted(set(HEATMAP_PALETTES) | set(COLORSCALES)))
                 + ", or any matplotlib colormap name"
             ) from None
     low, high = HEATMAP_PALETTES[name]

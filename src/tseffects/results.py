@@ -1,10 +1,15 @@
-"""The object the effect functions return."""
+"""The object the effect functions return.
+
+Author: Dr Merwan Roudane <merwanroudane920@gmail.com>
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
 import pandas as pd
+
+from ._tables import Summary, build_frame
 
 
 @dataclass
@@ -45,6 +50,46 @@ class EffectResult:
     def value_column(self) -> str:
         """``"GDRF"`` for a response function, ``"Effect"`` for an interaction."""
         return "Effect" if "Effect" in self.estimates.columns else "GDRF"
+
+    def to_frame(self) -> pd.DataFrame:
+        """The estimates with z statistics, p-values and significance markers.
+
+        The p-values are two-sided normal, to match the delta-method intervals.
+
+        Examples
+        --------
+        >>> import statsmodels.formula.api as smf
+        >>> from tseffects import load_toy_data, gdrf_adl
+        >>> fit = smf.ols("y ~ l_1_y + x + l_1_x", data=load_toy_data()).fit()
+        >>> out = gdrf_adl(fit, x_vrbl={"x": 0, "l_1_x": 1},
+        ...                y_vrbl={"l_1_y": 1}, shock_history="step", s_limit=3)
+        >>> out.to_frame().columns.tolist()
+        ['Period', 'GDRF', 'SE', 'Lower', 'Upper', 'z', 'p', 'stars']
+        """
+        return build_frame(self.estimates, self.value_column)
+
+    def summary(self) -> Summary:
+        """An aligned table of the effects, ready for a manuscript.
+
+        The returned object prints as text, and carries ``as_latex()``,
+        ``as_markdown()`` and ``as_html()`` renderings of the same numbers.
+
+        Examples
+        --------
+        >>> import statsmodels.formula.api as smf
+        >>> from tseffects import load_toy_data, gdrf_adl
+        >>> fit = smf.ols("y ~ l_1_y + x + l_1_x", data=load_toy_data()).fit()
+        >>> out = gdrf_adl(fit, x_vrbl={"x": 0, "l_1_x": 1},
+        ...                y_vrbl={"l_1_y": 1}, shock_history="step", s_limit=3)
+        >>> out.summary().as_markdown().splitlines()[0].startswith('Period')
+        True
+        """
+        return Summary(
+            self.to_frame(),
+            self.value_column,
+            self.meta.get("table", {}),
+            self.meta.get("table", {}).get("title", "Dynamic effects"),
+        )
 
     def expanded_formulae(self) -> dict:
         """The formulae multiplied out into a flat sum of terms.
