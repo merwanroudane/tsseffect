@@ -3,10 +3,10 @@
 Author: Dr Merwan Roudane <merwanroudane920@gmail.com>
 
 ``docs/assets/banner.svg`` is the crisp version the documentation site uses.
-This renders the same design to PNG, because PyPI proxies README images and
-serves SVG from raw.githubusercontent as ``text/plain``, which no browser will
-draw inside an ``<img>``. The README therefore points at the PNG, which renders
-on GitHub and on PyPI alike.
+This renders the same design to PNG for the README, because PyPI rewrites
+README images through its own proxy and sanitizes the HTML, and a raster is the
+one format certain to survive that. The PNG renders on GitHub and on PyPI
+alike.
 
     python examples/make_banner.py
 """

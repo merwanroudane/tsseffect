@@ -11,11 +11,16 @@ All notable changes to this project are recorded here. The format follows
 - Every image in the README was referenced by a path relative to the
   repository, which GitHub resolves and PyPI does not — so the banner and all
   four figures were broken on the PyPI project page. They now use absolute
-  URLs.
-- The banner is a PNG on the README. PyPI proxies README images, and
-  raw.githubusercontent serves SVG as `text/plain`, which no browser draws
-  inside an `<img>`. `examples/make_banner.py` renders it; the crisp SVG is
-  still what the documentation site uses.
+  URLs. This was the actual defect, and it is verified against the built
+  metadata: nine image sources, none relative.
+
+### Changed
+
+- The README banner is a PNG rather than the SVG, rendered by
+  `examples/make_banner.py`. PyPI rewrites README images through its own
+  proxy and sanitizes the HTML, and a raster is the one format certain to
+  survive that; the SVG is kept and is what the documentation site uses, where
+  it stays crisp at any zoom.
 
 ## [0.5.0] — 2026-10-28
 
