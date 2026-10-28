@@ -48,11 +48,6 @@ All notable changes to this project are recorded here. The format follows
 - The `"Baseline"` and `"0"` tick labels overlapped on fitted-value plots. The
   baseline now sits further from the shock, scaled to the horizon, and the
   redundant tick at zero is dropped.
-
-## [0.4.2] — 2026-10-28
-
-### Fixed
-
 - The source distribution shipped `tests/test_*.py` but not `tests/conftest.py`,
   which holds every fixture, so the tests in it could not be run. A `MANIFEST.in`
   now includes the whole test directory, the R reference script and its Python
@@ -92,5 +87,4 @@ Garrett N. Vande Kamp and Reshi Rajan.
 
 [0.5.1]: https://github.com/merwanroudane/tsseffect/releases/tag/v0.5.1
 [0.5.0]: https://github.com/merwanroudane/tsseffect/releases/tag/v0.5.0
-[0.4.2]: https://github.com/merwanroudane/tsseffect/releases/tag/v0.4.2
 [0.4.1]: https://github.com/merwanroudane/tsseffect/releases/tag/v0.4.1
