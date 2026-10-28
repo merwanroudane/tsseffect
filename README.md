@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/banner.svg" alt="tseffects — dynamic effects from single-equation time series models" width="100%">
+  <img src="https://raw.githubusercontent.com/merwanroudane/tsseffect/main/docs/assets/banner.png" alt="tseffects — dynamic effects from single-equation time series models" width="100%">
 </p>
 
 <p align="center">
@@ -49,7 +49,7 @@ step.summary()
 ```
 
 <p align="center">
-  <img src="docs/assets/approval_overview.png" alt="Impulse response, step response and predicted approval" width="100%">
+  <img src="https://raw.githubusercontent.com/merwanroudane/tsseffect/main/docs/assets/approval_overview.png" alt="Impulse response, step response and predicted approval" width="100%">
 </p>
 
 ---
@@ -359,7 +359,7 @@ Model                : ADL(1, 1)              Std. errors     :        HC3
 ======================================================================================
 ```
 
-<p align="center"><img src="docs/assets/approval_step.png" width="78%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/merwanroudane/tsseffect/main/docs/assets/approval_step.png" width="78%"></p>
 
 **Step 4 — the same question through a GECM.** The GECM and the ADL are the same model
 written two ways, so the answer must be identical — and it is, to 2.3 × 10⁻¹⁴:
@@ -385,7 +385,7 @@ fitted = ts.gdrf_adl(fit, x_vrbl=..., y_vrbl=..., shock_history="step",
                                         "DIVIDEDGOV": data["DIVIDEDGOV"].mean()})
 ```
 
-<p align="center"><img src="docs/assets/approval_fitted.png" width="78%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/merwanroudane/tsseffect/main/docs/assets/approval_fitted.png" width="78%"></p>
 
 **Step 6 — does the effect depend on how salient the economy is?** This is Cavari's own
 thesis, and it is an interaction:
@@ -423,7 +423,7 @@ it takes about five years to arrive at essentially the same place. The three lon
 multipliers are nearly identical — the destination does not depend on salience, only the
 journey. No coefficient table can show you that.
 
-<p align="center"><img src="docs/assets/approval_interact_lines.png" width="78%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/merwanroudane/tsseffect/main/docs/assets/approval_interact_lines.png" width="78%"></p>
 
 **Step 7 — export for the manuscript.**
 
@@ -575,7 +575,7 @@ the translation. 176 tests pass under `pytest`.
   author  = {Roudane, Merwan},
   title   = {tseffects: Dynamic Effects from Single-Equation Time Series Models in Python},
   year    = {2026},
-  version = {0.5.0},
+  version = {0.5.1},
   url     = {https://github.com/merwanroudane/tsseffect}
 }
 ```

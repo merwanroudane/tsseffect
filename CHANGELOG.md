@@ -4,6 +4,19 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] — 2026-10-28
+
+### Fixed
+
+- Every image in the README was referenced by a path relative to the
+  repository, which GitHub resolves and PyPI does not — so the banner and all
+  four figures were broken on the PyPI project page. They now use absolute
+  URLs.
+- The banner is a PNG on the README. PyPI proxies README images, and
+  raw.githubusercontent serves SVG as `text/plain`, which no browser draws
+  inside an `<img>`. `examples/make_banner.py` renders it; the crisp SVG is
+  still what the documentation site uses.
+
 ## [0.5.0] — 2026-10-28
 
 ### Added
@@ -72,6 +85,7 @@ Garrett N. Vande Kamp and Reshi Rajan.
   1e-9, across 29 specifications.
 - The GECM path reproduces the isomorphic ADL fit to 1.3e-15, independently of R.
 
+[0.5.1]: https://github.com/merwanroudane/tsseffect/releases/tag/v0.5.1
 [0.5.0]: https://github.com/merwanroudane/tsseffect/releases/tag/v0.5.0
 [0.4.2]: https://github.com/merwanroudane/tsseffect/releases/tag/v0.4.2
 [0.4.1]: https://github.com/merwanroudane/tsseffect/releases/tag/v0.4.1

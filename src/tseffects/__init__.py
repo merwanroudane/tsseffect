@@ -94,7 +94,7 @@ from .plots import (
 )
 from .results import EffectResult
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 __author__ = "Dr Merwan Roudane"
 __email__ = "merwanroudane920@gmail.com"
 

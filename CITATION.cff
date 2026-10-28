@@ -10,7 +10,7 @@ authors:
 repository-code: "https://github.com/merwanroudane/tsseffect"
 url: "https://merwanroudane.github.io/tsseffect/"
 license: GPL-2.0-or-later
-version: 0.5.0
+version: 0.5.1
 date-released: "2026-10-28"
 keywords:
   - time series
