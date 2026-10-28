@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+.venv/
+venv/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Reference output from the R validation run: regenerate with
+# validate/r_reference.R rather than committing it.
+validate/r_out/
+
+# The upstream R source tarball
+*.tar.gz
